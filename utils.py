@@ -35,7 +35,7 @@ def any_newer_than(target: Path, *nodes: Path, filter: Optional[Callable[[Path],
 
     if node.is_dir():
         for children in node.iterdir():
-            if any_newer_than(target, children) is True:
+            if any_newer_than(target, children) == True:
                 return True
 
     if len(nodes) > 1:

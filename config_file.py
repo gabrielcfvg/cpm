@@ -38,7 +38,7 @@ class ProjectConfig:
     def get_executable_path(self, target: str, build_mode: str) -> Path:
 
         assert target in self.targets
-        assert self.targets[target].type is TargetType.Executable
+        assert self.targets[target].type == TargetType.Executable
         assert build_mode in self.build_types
 
         return Path(".", self.build_folder, build_mode, self.targets[target].name)
