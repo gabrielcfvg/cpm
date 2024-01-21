@@ -43,6 +43,34 @@ class ProjectConfig:
         assert build_mode in self.build_types
 
         return Path(".", self.build_folder, build_mode, self.targets[target].name)
+    
+    def get_runnable_targets(self) -> List[str]:
+
+        runnable: List[str] = []
+        for target_name, target in self.targets.items():
+            if target.type == TargetType.Executable:
+                runnable.append(target_name)
+
+        return runnable
+    
+    def get_testable_targets(self) -> List[str]:
+
+        testable: List[str] = []
+        for target_name, target in self.targets.items():
+            if target.is_test or target.associated_test_target_name != None:
+                testable.append(target_name)
+
+        return testable
+    
+    def get_all_tests(self) -> List[str]:
+
+        testable = self.get_testable_targets()
+
+        for test in testable:
+            if self.targets[test].test_exclude_from_all:
+                testable.remove(test)
+
+        return testable
 
 
 def read_config() -> ProjectConfig:
@@ -70,8 +98,8 @@ def __parse_config_file() -> ProjectConfig:
         executables: TargetList = __take_if_or_default(project["targets"], "executable", TargetList, [])
         for executable in executables:
             name: str = __take(executable, "name", str)
-            associated_test_target_name: Optional[str] = __take_if(executable, "test_target", str)
             is_test: bool = __take_if_or_default(executable, "is_test", bool, False)
+            associated_test_target_name: Optional[str] = __take_if(executable, "test_target", str) if not is_test else None
             exclude_from_all: bool = is_test and __take_if_or_default(executable, "exclude_from_all", bool, False)
             __reject_unused_keys(executable)
 
@@ -117,6 +145,11 @@ def __validate_config(config: ProjectConfig):
     if config.default_build_type != None:
         if config.default_build_type not in config.build_types:
             panic(f"{config.default_build_type} build type does not exists, project.default_build_type must be a existent build type")
+
+    for target in config.targets.values():
+        if target.associated_test_target_name != None:
+            if not config.targets[target.associated_test_target_name].is_test:
+                panic(f"associated test target must be a test, {target.associated_test_target_name} is not")
         
 
 def __reject_unused_keys(map: Dict[str, Any]):
