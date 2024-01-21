@@ -14,6 +14,7 @@ from type_check import check_type
 
 CONFIG_FILE_PATH = "./cpmconfig.toml"
 DEFAULT_BUILD_FOLDER = "./build/"
+TREE_PATH_VAR = "__TREE_PATH__"
 
 class TargetType(Enum):
     Executable = 1
@@ -44,72 +45,7 @@ class ProjectConfig:
         return Path(".", self.build_folder, build_mode, self.targets[target].name)
 
 
-
 def parse_config_file() -> ProjectConfig:
-    
-    PATH_VAR = "__TREE_PATH__"
-
-    def insert_tree_path(map: Dict[str, Any], path: List[str] = []):
-
-        def build_path_str(path: List[str]) -> str:
-            return "".join("." + key for key in path)[1:]
-
-        def dispatch(value: Any, path: List[str]):
-            
-            if check_type(value, Dict[str, Any]):
-                insert_tree_path(value, path + [key])
-            elif check_type(value, List[Any]):
-                handle_arrays(value, path + [key])
-
-        def handle_arrays(array: List[Any], path: List[str]):
-            for idx, item in enumerate(array):
-                dispatch(item, path + [str(idx)])
-
-
-        if PATH_VAR in map:
-            panic(f"please, do not use the '{PATH_VAR}' key")
-
-        for key, value in map.items():
-            dispatch(value, path + [key])
-
-        map[PATH_VAR] = build_path_str(path)
-
-
-    def take_if[T](map: Dict[str, Any], key: str, vT: type[T]) -> Optional[T]:
-
-        if (key not in map) or not check_type(map[key], vT):
-            return None
-        
-        value: T = map[key]
-        map.pop(key)
-        return value
-    
-
-    def take_if_or_default[T](map: Dict[str, Any], key: str, vT: type[T], default: T) -> T:
-
-        value = take_if(map, key, vT)
-        
-        if value == None:
-            return default
-        
-        return value
-
-
-    def take[T](map: Dict[str, Any], key: str, vT: type[T]) -> T:
-
-        assert PATH_VAR in map, "internal error, the tree shold be annotated with tree path"
-
-        if key not in map:
-            panic(f"{map[PATH_VAR]}.{key} is required")
-
-        if not check_type(map[key], vT):
-            panic(f"{map[PATH_VAR]}.{key} needs to be an {T}")
-
-        value: T = map[key]
-        map.pop(key)
-        return value
-    
-
 
     file = open(CONFIG_FILE_PATH, "rb")
     config_data = tomllib.load(file)
@@ -151,3 +87,68 @@ def parse_config_file() -> ProjectConfig:
 
     return ProjectConfig(targets, build_types, Path(build_folder), main_target, default_build_mode)
 
+
+
+def take_if[T](map: Dict[str, Any], key: str, vT: type[T]) -> Optional[T]:
+
+    if (key not in map) or not check_type(map[key], vT):
+        return None
+    
+    value: T = map[key]
+    map.pop(key)
+    return value
+
+
+def take_if_or_default[T](map: Dict[str, Any], key: str, vT: type[T], default: T) -> T:
+
+    value = take_if(map, key, vT)
+    
+    if value == None:
+        return default
+    
+    return value
+
+
+def take[T](map: Dict[str, Any], key: str, vT: type[T]) -> T:
+
+    assert TREE_PATH_VAR in map, "internal error, the tree shold be annotated with tree path"
+
+    if key not in map:
+        panic(f"{map[TREE_PATH_VAR]}.{key} is required")
+
+    if not check_type(map[key], vT):
+        panic(f"{map[TREE_PATH_VAR]}.{key} needs to be an {T}")
+
+    value: T = map[key]
+    map.pop(key)
+    return value
+
+
+
+def insert_tree_path(map: Dict[str, Any], path: List[str] = []):
+
+    def build_path_str(path: List[str]) -> str:
+        return "".join("." + key for key in path)[1:]
+
+    def dispatch(value: Any, path: List[str]):
+        
+        if check_type(value, Dict[str, Any]):
+            insert_tree_path(value, path)
+        elif check_type(value, List[Any]):
+            handle_array(value, path)
+
+    def handle_array(array: List[Any], path: List[str]):
+        for idx, item in enumerate(array):
+            dispatch(item, path + [str(idx)])
+
+    def handle_dict(map: Dict[str, Any], path: List[str]):
+
+        if TREE_PATH_VAR in map:
+            panic(f"please, do not use the '{TREE_PATH_VAR}' key")
+
+        for key, value in map.items():
+            dispatch(value, path + [key])
+
+        map[TREE_PATH_VAR] = build_path_str(path)
+
+    return handle_dict(map, [])
