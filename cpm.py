@@ -8,7 +8,7 @@ assert sys.version_info >= MINIMUM_PYTHON_VERSION, f"minimum python version is {
 
 
 
-from config_file import parse_config_file
+from config_file import read_config
 
-config = parse_config_file()
+config = read_config()
 print(config)
