@@ -40,6 +40,7 @@ def __get_cmake_command(config: ProjectConfig) -> str:
 
 def build(config: ProjectConfig, target: str, build_type: str):
 
+
     assert target in config.targets
     assert build_type in config.build_types
 
@@ -52,8 +53,10 @@ def build(config: ProjectConfig, target: str, build_type: str):
     # TODO: filter ignored CMakeLists.txt's
     filter: Callable[[Path], bool] = lambda path: path.name == "CMakeLists.txt"
     if dir_created or any_newer_than(build_folder, Path(".", "CMakeLists.txt"), config.src_folder, filter=filter):
+        print(f"reloading cmake cache in '{build_type}'") # TODO: colorir
         cmd(f"{cmake} -B {build_folder} -S . -DCMAKE_BUILD_TYPE={build_type}")
 
+    print(f"building target '{target}' with '{build_type}'") # TODO: colorir
     cmd(f"{cmake} --build {build_folder} --target {target} -j{cpu_count}")
     
     commands_path = Path(build_folder, "compile_commands.json")
@@ -72,6 +75,8 @@ def run(config: ProjectConfig, target: str, build_type: str, args: List[str]):
     build(config, target, build_type)
     executable_path = config.get_executable_path(target, build_type)
     # assert is_file_executable(executable_path) TODO: remove comment
+    
+    print(f"running '{target}'") # TODO: colorir
     cmd(f"./{executable_path} {args}")
 
 def reload(config: ProjectConfig):
