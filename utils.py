@@ -6,13 +6,36 @@ from typing import Optional, Any, Callable, NoReturn
 
 
 
-def cmd(command: str, get_stdout: bool = False, env: Optional[Any] = None) -> Optional[bytes]:
+def cmd(command: str, get_stdout: bool = False, shell: bool = False, env: Optional[Any] = None) -> Optional[bytes]:
 
-    if get_stdout:
-        return subprocess.run(command.split(' '), check=True, capture_output=True, env=env).stdout
-    else:
-        subprocess.run(command.split(' '), check=True, stdout=sys.stdout)
+    try:
 
+        if get_stdout:
+            return subprocess.run(command.split(' '), shell=shell, check=True, env=env, capture_output=True).stdout
+        else:
+            subprocess.run(command.split(' '), shell=shell, check=True, env=env, stdout=sys.stdout)
+    
+    except KeyboardInterrupt:
+        pass
+
+def command_exists(command_name: str) -> bool:
+
+    try:
+        cmd(f"command -v {command_name}", get_stdout=True, shell=True)
+        return True
+    except subprocess.CalledProcessError:
+        return False
+
+def is_file_executable(file: Path) -> bool:
+
+    assert file.exists()
+    assert file.is_file()
+
+    try:
+        cmd(f"test -x {file}", get_stdout=True, shell=True) # FIXME: falha mesmo que o arquivo seja executável
+        return True
+    except subprocess.CalledProcessError:
+        return False
 
 def panic(*args: str) -> NoReturn:
 

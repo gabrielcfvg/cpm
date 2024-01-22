@@ -8,7 +8,7 @@ from pathlib import Path
 import tomllib
 
 # local
-from utils import panic
+from utils import panic, is_file_executable, command_exists
 from type_check import check_type
 
 
@@ -23,6 +23,7 @@ class TargetType(Enum):
 @dataclass
 class Target:
     name: str
+    path: Path
     type: TargetType
     is_test: bool
     test_exclude_from_all: bool
@@ -33,17 +34,24 @@ class ProjectConfig:
     targets: Dict[str, Target]
     build_types: List[str]
     build_folder: Path
+    src_folder: Path
     main_target: Optional[str]
     default_build_type: Optional[str]
+    cmake_custom_path: Optional[Path]
 
-    def get_executable_path(self, target: str, build_mode: str) -> Path:
+    def get_executable_path(self, target: str, build_type: str) -> Path:
 
         assert target in self.targets
         assert self.targets[target].type == TargetType.Executable
-        assert build_mode in self.build_types
+        assert build_type in self.build_types
 
-        return Path(".", self.build_folder, build_mode, self.targets[target].name)
+        return Path(".", self.build_folder, build_type, self.targets[target].path, self.targets[target].name)
     
+    def get_build_type_path(self, build_type: str) -> Path:
+
+        assert build_type in self.build_types
+        return Path(".", self.build_folder, build_type)
+
     def get_runnable_targets(self) -> List[str]:
 
         runnable: List[str] = []
@@ -90,6 +98,8 @@ def __parse_config_file() -> ProjectConfig:
     build_types: List[str] = __take(project, "build_types", List[str])
     default_build_mode: Optional[str] = __take_if(project, "default_build_type", str)
     build_folder: str = __take_if_or_default(project, "build_folder", str, DEFAULT_BUILD_FOLDER)
+    custom_cmake_path: Optional[str] = __take_if(project, "cmake_path", str)
+    src_folder: str = __take(project, "src_folder", str)
     
     targets: Dict[str, Target] = dict()
     type TargetList = List[Dict[str, Any]]
@@ -98,6 +108,7 @@ def __parse_config_file() -> ProjectConfig:
         executables: TargetList = __take_if_or_default(project["targets"], "executable", TargetList, [])
         for executable in executables:
             name: str = __take(executable, "name", str)
+            path: str = __take(executable, "path", str)
             is_test: bool = __take_if_or_default(executable, "is_test", bool, False)
             associated_test_target_name: Optional[str] = __take_if(executable, "test_target", str) if not is_test else None
             exclude_from_all: bool = is_test and __take_if_or_default(executable, "exclude_from_all", bool, False)
@@ -106,19 +117,20 @@ def __parse_config_file() -> ProjectConfig:
             if name in targets:
                 panic("a target with name '{}' already exists")
         
-            targets[name] = Target(name, TargetType.Executable, is_test, exclude_from_all, associated_test_target_name)
+            targets[name] = Target(name, Path(path), TargetType.Executable, is_test, exclude_from_all, associated_test_target_name)
 
 
         libraries: TargetList = __take_if_or_default(project["targets"], "library", TargetList, [])
         for library in libraries:
             name: str = __take(library, "name", str)
+            path: str = __take(library, "path", str)
             associated_test_target_name: Optional[str] = __take_if(library, "test_target", str)
             __reject_unused_keys(library)
             
             if name in targets:
                 panic("a target with name '{}' already exists")
 
-            targets[name] = Target(name, TargetType.Library, False, False, associated_test_target_name)
+            targets[name] = Target(name, Path(path), TargetType.Library, False, False, associated_test_target_name)
         
         __reject_unused_keys(project["targets"])
         project.pop("targets")
@@ -126,9 +138,26 @@ def __parse_config_file() -> ProjectConfig:
     __reject_unused_keys(project)
     __reject_unused_keys(config_data)
 
-    return ProjectConfig(targets, build_types, Path(build_folder), main_target, default_build_mode)
+    return ProjectConfig(
+        targets,
+        build_types,
+        Path(build_folder),
+        Path(src_folder),
+        main_target,
+        default_build_mode,
+        Path(custom_cmake_path) if custom_cmake_path != None else None
+    )
 
 def __validate_config(config: ProjectConfig):
+
+    if not config.src_folder.exists():
+        panic(f"{config.src_folder} does not exists, project.src_folder needs to be a existent directory")
+
+    if not config.src_folder.is_dir():
+        panic(f"{config.src_folder} is not a directory")
+
+    if not config.build_folder.parent.exists():
+        panic("project.build_folder parent path must exists")
 
     if config.main_target != None:
         
@@ -147,10 +176,20 @@ def __validate_config(config: ProjectConfig):
             panic(f"{config.default_build_type} build type does not exists, project.default_build_type must be a existent build type")
 
     for target in config.targets.values():
+        
         if target.associated_test_target_name != None:
             if not config.targets[target.associated_test_target_name].is_test:
                 panic(f"associated test target must be a test, {target.associated_test_target_name} is not")
         
+        if target.path.is_absolute():
+            panic(f"target path must be relative, {target.path} is not")
+        
+    if config.cmake_custom_path != None:
+        if not is_file_executable(config.cmake_custom_path):
+            panic("project.cmake_custom_path must be a executable file")
+    else:
+        if not command_exists("cmake"):
+            panic("cmake command not found")
 
 def __reject_unused_keys(map: Dict[str, Any]):
 

@@ -5,30 +5,51 @@ assert __name__ == "__main__"
 import sys
 MINIMUM_PYTHON_VERSION = (3, 12)
 assert sys.version_info >= MINIMUM_PYTHON_VERSION, f"minimum python version is {MINIMUM_PYTHON_VERSION[0]}.{MINIMUM_PYTHON_VERSION[1]}"
-del sys
 
 # builtin
 import argparse
+from typing import Optional, List
 
 # local
 from config_file import read_config, ProjectConfig
+from utils import panic
+import operations
 
 
 
-def build(config: ProjectConfig, args: argparse.Namespace):
-    pass
+def build(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[List[str]]):
+    
+    if fw_args != None:
+        panic("build command do not receives forward arguments")
 
-def run(config: ProjectConfig, args: argparse.Namespace):
-    pass
+    operations.build(config, args.target, args.build_type)
 
-def test(config: ProjectConfig, args: argparse.Namespace):
-    pass
+def run(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[List[str]]):
+    
+    operations.run(config, args.target, args.build_type, fw_args if fw_args != None else [])
 
-def reload(config: ProjectConfig, args: argparse.Namespace):
-    pass
+def test(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[List[str]]):
 
-def clean(config: ProjectConfig, args: argparse.Namespace):
-    pass
+    if fw_args != None and len(args.target) > 1:
+        panic("test command only support forward arguments when testing a single target")
+
+    target: str
+    for target in args.target:
+        operations.run(config, target, args.build_type, [])
+
+def reload(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[List[str]]):
+    
+    if fw_args != None:
+        panic("reload command do not receives forward arguments")
+
+    operations.reload(config)
+
+def clean(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[List[str]]):
+    
+    if fw_args != None:
+        panic("clean command do not receives forward arguments")
+
+    operations.clean(config)
 
 
 def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
@@ -37,7 +58,7 @@ def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
         description="Provides a ergonomic CLI interface for cmake projects",
         epilog="repository: https://github.com/gabrielcfvg/cpm"
     )
-    commands = parser.add_subparsers(required=True)
+    commands = parser.add_subparsers(title="commands", required=True)
 
     # build
     build_command = commands.add_parser(
@@ -123,7 +144,14 @@ def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
     return parser
 
 
+
+escaped_args: Optional[List[str]] = None
+for idx, arg in enumerate(sys.argv):
+    if arg == "--":
+        escaped_args = sys.argv[idx + 1:]
+        sys.argv = sys.argv[:idx]
+
 config = read_config()
 parser = build_parser(config)
 args = parser.parse_args()
-args.func(args)
+args.func(config, args, escaped_args)
