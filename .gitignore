@@ -3,3 +3,6 @@
 /poetry/
 /python/
 /.venv/
+/build
+/dist/
+*.spec

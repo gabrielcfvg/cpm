@@ -12,9 +12,9 @@ from utils import panic, is_file_executable, command_exists
 from type_check import check_type
 
 
-CONFIG_FILE_PATH = "./cpmconfig.toml"
-DEFAULT_BUILD_FOLDER = "./build/"
-TREE_PATH_VAR = "__TREE_PATH__"
+CONFIG_FILE_PATH: Path = Path("./cpmconfig.toml")
+DEFAULT_BUILD_FOLDER: Path = Path("./build/")
+TREE_PATH_VAR: str = "__TREE_PATH__"
 
 class TargetType(Enum):
     Executable = 1
@@ -89,15 +89,18 @@ def read_config() -> ProjectConfig:
 
 def __parse_config_file() -> ProjectConfig:
 
+    if not CONFIG_FILE_PATH.exists():
+        panic(f"{CONFIG_FILE_PATH} not found")
+
     file = open(CONFIG_FILE_PATH, "rb")
-    config_data = tomllib.load(file)
+    config_data = tomllib.load(file) 
     __insert_tree_path(config_data)
 
     project = __take(config_data, "project", Dict[str, Any])
     main_target: Optional[str] = __take_if(project, "main_target", str)
     build_types: List[str] = __take(project, "build_types", List[str])
     default_build_mode: Optional[str] = __take_if(project, "default_build_type", str)
-    build_folder: str = __take_if_or_default(project, "build_folder", str, DEFAULT_BUILD_FOLDER)
+    build_folder: str = __take_if_or_default(project, "build_folder", str, str(DEFAULT_BUILD_FOLDER))
     custom_cmake_path: Optional[str] = __take_if(project, "cmake_path", str)
     src_folder: str = __take(project, "src_folder", str)
     

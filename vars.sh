@@ -1,11 +1,40 @@
 #!/usr/bin/env bash
 
-POETRY_HOME="$(dirname -- "$( readlink -f -- "$0"; )";)/poetry"
-POETRY_BIN="${POETRY_HOME}/bin/poetry"
-POETRY_VERSION="1.7.1"
-POETRY_VERSION_PATH="${POETRY_HOME}/.poetry_version"
+# setup errors
+set -eu
 
-PYTHON_HOME="$(dirname -- "$( readlink -f -- "$0"; )";)/python"
-PYTHON_BIN="${PYTHON_HOME}/bin/python3"
+
+# setting the path variables
+
+SCRIPT_HOME="$(dirname -- "$( readlink -f -- "$0"; )";)"
+
+POETRY_HOME="$SCRIPT_HOME/poetry"
+POETRY_BIN="$POETRY_HOME/bin/poetry"
+POETRY_VERSION="1.7.1"
+POETRY_VERSION_PATH="$POETRY_HOME/.poetry_version"
+
+PYTHON_HOME="$SCRIPT_HOME/python"
+PYTHON_BIN="$PYTHON_HOME/bin/python3"
 PYTHON_VERSION="3.12.1"
-PYTHON_VERSION_PATH="${PYTHON_HOME}/.python_version"
+PYTHON_VERSION_PATH="$PYTHON_HOME/.python_version"
+
+PYINSTALLER_HOME="$SCRIPT_HOME/build" # prevents the root folder from getting too dirty
+PYINSTALLER_WORKPATH="cache" # two consecutive build folders are confusing
+PYINSTALLER_DIST="dist"
+
+CPM_HOME="$PYINSTALLER_HOME/$PYINSTALLER_DIST/cpm"
+CPM_BIN="$CPM_HOME/cpm"
+CPM_VERSION="0.1.0"
+CPM_VERSION_PATH="$CPM_HOME/.cpm_path"
+
+
+# scripts
+function assert_file_existence { if ! [[ -f $1 ]]; then echo "$1 not found"; exit 1; fi }
+get_python_version="$SCRIPT_HOME/scripts/get_python_version.py"; assert_file_existence $get_python_version
+version_gte="$SCRIPT_HOME/scripts/version_gte.py"; assert_file_existence $version_gte
+
+
+# update linker path
+set +u # removing the variable referencing restriction, because we need to access an external variable
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PYTHON_HOME/lib # the local python needs to find its shared libraries
+set -u # adding back the restriction

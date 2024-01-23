@@ -11,6 +11,7 @@ assert sys.version_info >= MINIMUM_PYTHON_VERSION, f"minimum python version is {
 # builtin
 import argparse
 from typing import Optional, List
+import importlib.metadata
 
 # local
 from config_file import read_config, ProjectConfig
@@ -62,6 +63,13 @@ def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
     )
     commands = parser.add_subparsers(title="commands", required=True)
 
+    # version
+    parser.add_argument(
+        "-v", "--version",
+        action="version",
+        version=importlib.metadata.version("cpm")
+    )
+
     # build
     build_command = commands.add_parser(
         name="build",
@@ -69,7 +77,7 @@ def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
 
     )
     build_command.add_argument(
-        "-t, --target",
+        "-t", "--target",
         dest="target",
         default=config.main_target,
         nargs="+",
@@ -77,7 +85,7 @@ def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
         help=f"the targets to be built, default: {config.main_target}"
     )
     build_command.add_argument(
-        "-m, --build_type",
+        "-m", "--build_type",
         dest="build_type",
         default=config.default_build_type,
         choices=config.build_types,
@@ -91,14 +99,14 @@ def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
         description="run the specified cmake target, building it before if needed"
     )
     run_command.add_argument(
-        '-t, --target',
+        "-t", "--target",
         dest="target",
         default=config.main_target,
         choices=config.get_runnable_targets(),
         help=f"the target to be runned, default: {config.main_target}"
     )
     run_command.add_argument(
-        '-m,--build_type',
+        "-m", "--build_type",
         dest="build_type",
         default=config.default_build_type,
         choices=config.build_types,
@@ -112,7 +120,7 @@ def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
         description="test the specified cmake target, or its associated test target, building it before if needed"
     )
     test_command.add_argument(
-        "-t,--target",
+        "-t", "--target",
         dest="target",
         default=config.get_all_tests(),
         choices=config.get_testable_targets(),
@@ -120,7 +128,7 @@ def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
         help=f"the targets to be tested, default: {config.get_all_tests()}"
     )
     test_command.add_argument(
-        '-m,--build_type',
+        "-m", "--build_type",
         dest="build_type",
         default=config.default_build_type,
         choices=config.build_types,
