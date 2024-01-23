@@ -29,7 +29,7 @@ function install_python {
         rm -rf $PYTHON_HOME
     fi
 
-
+    # TODO: check if source is already downloaded
     mkdir $PYTHON_HOME
     echo "downloading python source code..."
     python_zip_file="$PYTHON_HOME/python.tar.gz"
