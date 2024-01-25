@@ -38,6 +38,7 @@ CPM_VERSION_PATH="$CPM_HOME/.cpm_path"
 function assert_file_existence { if ! [[ -f $1 ]]; then echo "$1 not found"; exit 1; fi }
 get_python_version="$SCRIPT_HOME/scripts/get_python_version.py"; assert_file_existence $get_python_version
 version_gte="$SCRIPT_HOME/scripts/version_gte.py"; assert_file_existence $version_gte
+version_lt="$SCRIPT_HOME/scripts/version_lt.py"; assert_file_existence $version_lt
 
 
 # update linker path

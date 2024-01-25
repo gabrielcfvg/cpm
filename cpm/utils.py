@@ -2,12 +2,17 @@ assert __name__ != "__main__"
 
 import sys, subprocess
 from pathlib import Path
-from typing import Optional, Any, Callable, NoReturn, Tuple
+from typing import Optional, Any, Callable, NoReturn
+from dataclasses import dataclass
 from sys import exit
 
 
+@dataclass
+class CMDResult:
+    exit_code: int
+    stdout: Optional[bytes]
 
-def cmd(command: str, get_stdout: bool = False, shell: bool = False, env: Optional[Any] = None) -> Tuple[int, Optional[bytes]]:
+def cmd(command: str, get_stdout: bool = False, shell: bool = False, env: Optional[Any] = None) -> CMDResult:
 
     try:
         r = subprocess.run(
@@ -19,7 +24,7 @@ def cmd(command: str, get_stdout: bool = False, shell: bool = False, env: Option
             stdout=None if get_stdout else sys.stdout
         )
 
-        return (r.returncode, r.stdout if get_stdout == True else None)
+        return CMDResult(r.returncode, r.stdout if get_stdout == True else None)
 
         #if get_stdout:
         #    return subprocess.run(command.split(' '), shell=shell, check=True, env=env, capture_output=True).stdout
@@ -27,7 +32,7 @@ def cmd(command: str, get_stdout: bool = False, shell: bool = False, env: Option
         #    subprocess.run(command.split(' '), shell=shell, check=True, env=env, stdout=sys.stdout)
     
     except KeyboardInterrupt:
-        pass
+        return CMDResult(1, None)
 
 def command_exists(command_name: str) -> bool:
 

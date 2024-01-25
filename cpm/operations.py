@@ -23,7 +23,7 @@ def __make_build_directory(config: ProjectConfig, build_type: str) -> bool:
     if not (b := path.exists()):
         os.mkdir(path)
 
-    return a or b
+    return (not a) or (not b)
 
 def __get_cmake_command(config: ProjectConfig) -> str:
     
@@ -42,7 +42,7 @@ def build(config: ProjectConfig, target: str, build_type: str):
     dir_created = __make_build_directory(config, build_type)
 
     cmake = __get_cmake_command(config)
-    cpu_count = cmd("getconf _NPROCESSORS_ONLN", get_stdout=True).decode("utf-8").strip() # type: ignore
+    cpu_count = cmd("getconf _NPROCESSORS_ONLN", get_stdout=True).stdout.decode("utf-8").strip() # type: ignore
     build_folder = config.get_build_type_path(build_type)
 
     # TODO: filter ignored CMakeLists.txt's

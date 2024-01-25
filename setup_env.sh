@@ -83,9 +83,6 @@ function install_python_shorcut {
     # no caso do shortcut, não é necessário anotar a versão do python
     # "instalado", já que caso a versão se torne inadequada, o setuper pedirá
     # que seja feita uma instalação local
-    #
-    # writes the python version
-    # echo -n $SYS_PYTHON_VERSION > $PYTHON_VERSION_PATH
 }
 
 function install_poetry {
@@ -157,8 +154,7 @@ for python in "${PYTHON_NAMES[@]}"; do
     fi
 
     # check if the version of system python is adequate
-    SYS_PYTHON_VERSION=$( $python $SCRIPT_HOME/scripts/get_python_version.py )
-    if [[ $SYS_PYTHON_ERROR -eq 0 ]] && (! $version_gte $SYS_PYTHON_VERSION $PYTHON_VERSION); then
+    if [[ $SYS_PYTHON_ERROR -eq 0 ]] && (! $version_gte $( $python $SCRIPT_HOME/scripts/get_python_version.py ) $PYTHON_VERSION); then
         SYS_PYTHON_ERROR=1
         SYS_PYTHON_ERROR_MESSAGE="the system's $python version is not adequate, CPM requires python $PYTHON_VERSION"
     fi
@@ -206,6 +202,8 @@ if [[ $SYS_PYTHON_ERROR -eq 0 ]]; then
             install_python_shorcut $SYS_PYTHON_CMD
         fi
     fi
+
+    echo "python shortcut installation is done"
 
 else
     
@@ -268,6 +266,8 @@ else
             install_python
         fi
     fi
+
+    echo "python local installation is done"
 fi
 
 
@@ -293,3 +293,4 @@ if ! $SCRIPT_HOME/scripts/version_gte.py $POETRY_VERSION $(cat $POETRY_VERSION_P
     fi
 fi
 
+echo "poetry local installation is done"

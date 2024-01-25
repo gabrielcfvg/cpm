@@ -6,7 +6,7 @@ from parse_versions import get_versions
 
 v1, v2 = get_versions()
 
-if v1 >= v2:
+if v1 < v2:
     exit(0)
 else:
     exit(1)
