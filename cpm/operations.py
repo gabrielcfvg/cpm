@@ -16,21 +16,17 @@ def __make_build_directory(config: ProjectConfig, build_type: str) -> bool:
 
     assert build_type in config.build_types
 
-    output = False
-
-    if not config.build_folder.exists():
+    if not (a := config.build_folder.exists()):
         os.mkdir(config.build_folder)
-        output |= True
 
     path = Path(config.build_folder, build_type)
-    if not path.exists():
+    if not (b := path.exists()):
         os.mkdir(path)
-        output |= True
 
-    return output
+    return a or b
 
 def __get_cmake_command(config: ProjectConfig) -> str:
-
+    
     if config.cmake_custom_path != None:
         return f"./{config.cmake_custom_path}"
     else:
@@ -39,7 +35,6 @@ def __get_cmake_command(config: ProjectConfig) -> str:
     
 
 def build(config: ProjectConfig, target: str, build_type: str):
-
 
     assert target in config.targets
     assert build_type in config.build_types
@@ -65,19 +60,13 @@ def build(config: ProjectConfig, target: str, build_type: str):
 
 def run(config: ProjectConfig, target: str, build_type: str, args: List[str]):
 
-    fargs = ""
-    for arg in args:
-        fargs += " " + arg
-
-    if len(args) > 0:
-        fargs = fargs[1:]
-
+    fargs = " ".join(args)
     build(config, target, build_type)
     executable_path = config.get_executable_path(target, build_type)
     # assert is_file_executable(executable_path) TODO: remove comment
     
     print(f"running '{target}'") # TODO: colorir
-    cmd(f"./{executable_path} {args}")
+    cmd(f"./{executable_path} {fargs}")
 
 def reload(config: ProjectConfig):
     

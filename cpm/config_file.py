@@ -215,11 +215,8 @@ def __take_if_or_default[T](map: Dict[str, Any], key: str, vT: type[T], default:
 
     value = __take_if(map, key, vT)
     
-    if value == None:
-        return default
-    
-    return value
 
+    return (value if value != None else default)
 
 def __take[T](map: Dict[str, Any], key: str, vT: type[T]) -> T:
 
@@ -231,9 +228,8 @@ def __take[T](map: Dict[str, Any], key: str, vT: type[T]) -> T:
     if not check_type(map[key], vT):
         panic(f"{map[TREE_PATH_VAR]}.{key} needs to be an {T}")
 
-    value: T = map[key]
-    map.pop(key)
-    return value
+    return map.pop(key)
+
 
 
 

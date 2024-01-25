@@ -2,19 +2,29 @@ assert __name__ != "__main__"
 
 import sys, subprocess
 from pathlib import Path
-from typing import Optional, Any, Callable, NoReturn
+from typing import Optional, Any, Callable, NoReturn, Tuple
 from sys import exit
 
 
 
-def cmd(command: str, get_stdout: bool = False, shell: bool = False, env: Optional[Any] = None) -> Optional[bytes]:
+def cmd(command: str, get_stdout: bool = False, shell: bool = False, env: Optional[Any] = None) -> Tuple[int, Optional[bytes]]:
 
     try:
+        r = subprocess.run(
+            command.split(' '),
+            shell=shell,
+            check=True,
+            env=env,
+            capture_output=get_stdout,
+            stdout=None if get_stdout else sys.stdout
+        )
 
-        if get_stdout:
-            return subprocess.run(command.split(' '), shell=shell, check=True, env=env, capture_output=True).stdout
-        else:
-            subprocess.run(command.split(' '), shell=shell, check=True, env=env, stdout=sys.stdout)
+        return (r.returncode, r.stdout if get_stdout == True else None)
+
+        #if get_stdout:
+        #    return subprocess.run(command.split(' '), shell=shell, check=True, env=env, capture_output=True).stdout
+        #else:
+        #    subprocess.run(command.split(' '), shell=shell, check=True, env=env, stdout=sys.stdout)
     
     except KeyboardInterrupt:
         pass
@@ -37,11 +47,12 @@ def is_file_executable(file: Path) -> bool:
         return True
     except subprocess.CalledProcessError:
         return False
+        
 
-def panic(*args: str) -> NoReturn:
+def panic(*args: str, code: int = 1) -> NoReturn:
 
     print("ERROR:", *args)
-    exit(1)
+    exit(code)
 
 
 
@@ -58,9 +69,11 @@ def any_newer_than(target: Path, *nodes: Path, filter: Optional[Callable[[Path],
             return True
 
     if node.is_dir():
-        for children in node.iterdir():
-            if any_newer_than(target, children) == True:
-                return True
+        if any(any_newer_than(target, children) == True for children in node.iterdir()):
+            return True
+        #for children in node.iterdir():
+        #    if any_newer_than(target, children) == True:
+        #        return True
 
     if len(nodes) > 1:
         return any_newer_than(target, *nodes[1:])

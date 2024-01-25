@@ -1,6 +1,6 @@
 assert __name__ != "__main__"
 
-from typing import get_origin, get_args, Any, Dict, List, Union, Optional, Callable, TypeGuard, TypeAliasType
+from typing import get_origin, get_args, Any, Dict, List, Union, Optional, Callable, TypeGuard, TypeAliasType, cast
 from types import UnionType
 from utils import panic
 
@@ -27,34 +27,42 @@ def check_generic_type(value: Any, tp: type) -> bool:
 
         return any(check_type(value, tp) for tp in tps)
 
-
     def check_dict(value: Any, tp: type) -> bool:
 
         assert isinstance(value, (Dict, dict))
 
         (key_tp, item_tp) = get_args(tp)
+        value: Dict[Any, Any] = cast(Dict[Any, Any], value)
 
-        key: Any
-        item: Any
-        for key, item in value.items():
-            if not (check_type(key, key_tp) and check_type(item, item_tp)):
-                return False
+        def __old_fn(key_tp: type, item_tp: type):
+            for key, item in value.items():
+                if not (check_type(key, key_tp) and check_type(item, item_tp)):
+                    return False
+            return True
+
+        r = all([(check_type(key, key_tp) and check_type(item, item_tp))
+                 for key, item in value.items()])
         
-        return True
+        # roda isso ao menos uma vez so pra verificar
+        assert r == __old_fn(key_tp, item_tp), 'runtime test failed sorry'
+        return r
 
 
-    def check_list(value: Any, tp: type) -> bool:
+    def check_list(value: List[Any], tp: type) -> bool:
         
         assert isinstance(value, (List, list))
 
         item_tp = get_args(tp)[0]
 
-        item: Any
-        for item in value:
-            if not check_type(item, item_tp):
-                return False
-            
-        return True
+        def __old_fn(item_tp: type):
+            for item in value:
+                if not check_type(item, item_tp):
+                    return False
+            return True
+        
+        r = all([check_type(item, item_tp) for item in value])
+        assert r == __old_fn(item_tp), 'runtime test failed sorry'
+        return r
 
 
     check_map: Dict[type, Callable[[Any, type], bool]] = {
