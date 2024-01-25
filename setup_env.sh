@@ -29,7 +29,7 @@ function install_python {
         rm -rf $PYTHON_HOME
     fi
 
-    # TODO: check if source is already downloaded
+    # TODO: cache python source
     mkdir $PYTHON_HOME
     echo "downloading python source code..."
     python_zip_file="$PYTHON_HOME/python.tar.gz"
@@ -54,6 +54,7 @@ function install_python {
     cd ../..
     rm -rf $PYTHON_HOME/Python-$PYTHON_VERSION
 
+    echo -n $PYTHON_LOCAL_INSTALL_TYPE_LOCAL > $PYTHON_LOCAL_INSTALL_TYPE_PATH
     echo -n $PYTHON_VERSION > $PYTHON_VERSION_PATH
 }
 
@@ -74,11 +75,17 @@ function install_python_shorcut {
 
     # create a script that calls the system python3
     echo '#!/usr/bin/env bash' > $PYTHON_BIN
-    echo "python3 $@" >> $PYTHON_BIN
+    echo "$1 \"\$@\"" >> $PYTHON_BIN
     chmod +x $PYTHON_BIN
 
+
+    echo -n $PYTHON_LOCAL_INSTALL_TYPE_SHORTCUT > $PYTHON_LOCAL_INSTALL_TYPE_PATH
+    # no caso do shortcut, não é necessário anotar a versão do python
+    # "instalado", já que caso a versão se torne inadequada, o setuper pedirá
+    # que seja feita uma instalação local
+    #
     # writes the python version
-    echo -n $SYS_PYTHON_VERSION > $PYTHON_VERSION_PATH
+    # echo -n $SYS_PYTHON_VERSION > $PYTHON_VERSION_PATH
 }
 
 function install_poetry {
@@ -93,7 +100,8 @@ function install_poetry {
         rm -rf $POETRY_HOME
     fi
 
-    curl -sSL https://install.python-poetry.org | POETRY_HOME=$POETRY_HOME POETRY_VERSION=$POETRY_VERSION python3 - > /dev/null
+    curl -sSL https://install.python-poetry.org | POETRY_HOME=$POETRY_HOME POETRY_VERSION=$POETRY_VERSION $PYTHON_BIN - > /dev/null
+    $POETRY_BIN config virtualenvs.in-project true
     $POETRY_BIN env use $PYTHON_BIN
     $POETRY_BIN install
     echo -n $POETRY_VERSION > $POETRY_VERSION_PATH
@@ -130,65 +138,121 @@ function read_answer {
 #    -- se o usuário preferir que seja instalado localmente, prosseguir com a instalação local
 
 
-# error variables
+
 SYS_PYTHON_ERROR=0
 SYS_PYTHON_ERROR_MESSAGE=0
+SYS_PYTHON_CMD=0
 
-# check if python3 is installed on the system
-if ! command -v python3 &> /dev/null;then
-    SYS_PYTHON_ERROR=1
-    SYS_PYTHON_ERROR_MESSAGE="could not find python3"
-fi
+for python in "${PYTHON_NAMES[@]}"; do
 
-# check if the version of system python is adequate
-SYS_PYTHON_VERSION=$($SCRIPT_HOME/scripts/get_python_version.py)
-if [[ $SYS_PYTHON_ERROR -eq 0 ]] && (! $version_gte $SYS_PYTHON_VERSION $PYTHON_VERSION); then
-    SYS_PYTHON_ERROR=1
-    SYS_PYTHON_ERROR_MESSAGE="the system's python3 version is not adequate"
-fi
+    echo -n "checking $python...: "
 
-# check if the system's python installation have the shared library that is needed by the pyinstaller
-if [[ $SYS_PYTHON_ERROR -eq 0 ]] && (! ldconfig -p | grep "libpython${PYTHON_VERSION}.so.1.0" &> /dev/null); then
-    SYS_PYTHON_ERROR=1
-    SYS_PYTHON_ERROR_MESSAGE="the system does not have the libpython${PYTHON_VERSION}.so.1.0 library"
-fi
+    SYS_PYTHON_ERROR=0
+    SYS_PYTHON_ERROR_MESSAGE=0
+
+    # check if python is installed on the system
+    if ! command -v $python &> /dev/null;then
+        SYS_PYTHON_ERROR=1
+        SYS_PYTHON_ERROR_MESSAGE="could not find $python"
+    fi
+
+    # check if the version of system python is adequate
+    SYS_PYTHON_VERSION=$( $python $SCRIPT_HOME/scripts/get_python_version.py )
+    if [[ $SYS_PYTHON_ERROR -eq 0 ]] && (! $version_gte $SYS_PYTHON_VERSION $PYTHON_VERSION); then
+        SYS_PYTHON_ERROR=1
+        SYS_PYTHON_ERROR_MESSAGE="the system's $python version is not adequate, CPM requires python $PYTHON_VERSION"
+    fi
+
+    # check if the system's python installation have the shared library that is needed by the pyinstaller
+    if [[ $SYS_PYTHON_ERROR -eq 0 ]] && (! ldconfig -p | grep "libpython${PYTHON_REDUCED_VERSION}.so.1.0" &> /dev/null); then
+        SYS_PYTHON_ERROR=1
+        SYS_PYTHON_ERROR_MESSAGE="the system does not have the libpython${PYTHON_REDUCED_VERSION}.so.1.0 library"
+    fi
+
+    if [[ $SYS_PYTHON_ERROR -eq 0 ]]; then
+        
+        echo "SUCCESS"
+        SYS_PYTHON_CMD=$python
+        break
+    else
+        echo "FAILED, $SYS_PYTHON_ERROR_MESSAGE"
+    fi
+done
+
 
 
 if [[ $SYS_PYTHON_ERROR -eq 0 ]]; then
 
-    echo "using the system python3"
+    echo "using the system $SYS_PYTHON_CMD"
 
-    if ! [[ $DRY_RUN -eq 1 ]]; then
-        exit 0
+    # checar se o atalho para o python do sistema já foi criado
+    # - se não, criar o atalho
+    if ! [[ -d $PYTHON_HOME ]]; then
+        
+        echo "local shortcut for system python not found, creating..."
+        
+        if ! [[ $DRY_RUN -eq 1 ]]; then
+            install_python_shorcut $SYS_PYTHON_CMD
+        fi
     fi
 
-    install_python_shorcut
+    # checar se a instalação atual é local ou é apenas um atalho
+    # caso seja loca, remover e fazer uma instalação atalho
+    if [[ $(cat $PYTHON_LOCAL_INSTALL_TYPE_PATH) != "$PYTHON_LOCAL_INSTALL_TYPE_SHORTCUT" ]];then
+    
+        echo "overriding previous local installation, installing shortcut for system python..."
+
+        if ! [[ $DRY_RUN -eq 1 ]]; then
+            install_python_shorcut $SYS_PYTHON_CMD
+        fi
+    fi
+
 else
     
-    echo $SYS_PYTHON_ERROR_MESSAGE
-    echo "you can let CPM do a local installation of Python or you can try to resolve the dependencies yourself."
-    echo "doing a local installation takes a few minutes, but not many, maybe just seconds."
-    echo "it will depend on your internet connection and your processor"
-    echo "" # new line
-    set +e
-    read_answer "do you allow CPM to do a local installation of python? 🥹 " "yes" "no" 
-    input_result=$?
-    set -e
+    INSTALLATION_EXISTS=$( [[ -d $PYTHON_HOME ]]; echo $? )
+    INSTALLATION_IS_LOCAL=$( [[ $INSTALLATION_EXISTS -eq 0 ]] && [[ $(cat $PYTHON_LOCAL_INSTALL_TYPE_PATH) != "$PYTHON_LOCAL_INSTALL_TYPE_LOCAL" ]]; echo $? )
+    
+    # se a instalaçao não existir, ou existir, porém ser um atalho para o python do sistema,
+    # pedir permissão ao usuário para realizar a instalação local
+    if [[ $INSTALLATION_EXISTS -eq 0 ]] ||  [[ $INSTALLATION_IS_LOCAL -eq 0 ]] ; then
 
-    # interromper o processo caso o usuário rejeite a instalação local
-    if [[ $input_result -eq 2 ]]; then
+        echo $SYS_PYTHON_ERROR_MESSAGE
+        echo "you can let CPM do a local installation of Python or you can try to resolve the dependencies yourself."
+        echo "doing a local installation takes a few minutes, but not many, maybe just seconds."
+        echo "it will depend on your internet connection and your processor"
+        echo "" # new line
+        set +e # remove restriction so we can be able to receive the result
+        read_answer "do you allow CPM to do a local installation of python? 🥹 " "yes" "no" 
+        input_result=$?
+        set -e # put the restrictions back
 
-        echo "😭, ok then, after resolving the dependencies yourself, just execute this script again."
-        echo ""
-        exit 1
+        # interromper o processo caso o usuário rejeite a instalação local
+        if [[ $input_result -eq 2 ]]; then
+
+            echo "😭, ok then, after resolving the dependencies yourself, just execute this script again."
+            echo ""
+            exit 1
+        fi
     fi
+
 
     # checar se o python local já foi instalado
     # - se não, instalar um python localmente
-    if ! [[ -d $PYTHON_HOME ]]; then
+    if ! [[ $INSTALLATION_EXISTS -eq 0 ]] ; then
         
         echo "local python not found, installing..."
         
+        if ! [[ $DRY_RUN -eq 1 ]]; then
+            install_python
+        fi
+    fi
+
+    # checar se a instalação atual é local ou é apenas um atalho
+    # caso seja apenas um atalho, é necessário fazer uma instalação local
+    if ! [[ $INSTALLATION_IS_LOCAL -eq 0 ]]; then
+    
+        echo "overriding previous shortcut installation, installing local python..."
+
         if ! [[ $DRY_RUN -eq 1 ]]; then
             install_python
         fi

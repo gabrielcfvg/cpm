@@ -5,6 +5,7 @@ set -eu
 
 
 # setting the path variables
+# TODO: considerar colocar o poetry, python e build do cpm num mesmo diretório
 
 SCRIPT_HOME="$(dirname -- "$( readlink -f -- "$0"; )";)"
 
@@ -16,7 +17,12 @@ POETRY_VERSION_PATH="$POETRY_HOME/.poetry_version"
 PYTHON_HOME="$SCRIPT_HOME/python"
 PYTHON_BIN="$PYTHON_HOME/bin/python3"
 PYTHON_VERSION="3.12.1"
+PYTHON_REDUCED_VERSION=$(echo "$PYTHON_VERSION" | cut -d'.' -f1,2)
+PYTHON_NAMES=("python3" "python$PYTHON_REDUCED_VERSION")
 PYTHON_VERSION_PATH="$PYTHON_HOME/.python_version"
+PYTHON_LOCAL_INSTALL_TYPE_PATH="$PYTHON_HOME/.install_type"
+PYTHON_LOCAL_INSTALL_TYPE_LOCAL="local"
+PYTHON_LOCAL_INSTALL_TYPE_SHORTCUT="shortcut"
 
 PYINSTALLER_HOME="$SCRIPT_HOME/build" # prevents the root folder from getting too dirty
 PYINSTALLER_WORKPATH="cache" # two consecutive build folders are confusing

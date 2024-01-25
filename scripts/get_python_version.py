@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 
 assert __name__ == "__main__"
 from sys import version_info
