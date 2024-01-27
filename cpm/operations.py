@@ -66,7 +66,11 @@ def run(config: ProjectConfig, target: str, build_type: str, args: List[str]):
     # assert is_file_executable(executable_path) TODO: remove comment
     
     print(f"running '{target}'") # TODO: colorir
-    cmd(f"./{executable_path} {fargs}")
+
+
+    exit_code = cmd(f"./{executable_path} {fargs}", check=False).exit_code
+    if exit_code != 0:
+        print(f"target exited with code {exit_code}") # colorir
 
 def reload(config: ProjectConfig):
     

@@ -12,13 +12,13 @@ class CMDResult:
     exit_code: int
     stdout: Optional[bytes]
 
-def cmd(command: str, get_stdout: bool = False, shell: bool = False, env: Optional[Any] = None) -> CMDResult:
+def cmd(command: str, get_stdout: bool = False, check: bool = True, shell: bool = False, env: Optional[Any] = None) -> CMDResult:
 
     try:
         r = subprocess.run(
             command.split(' '),
             shell=shell,
-            check=True,
+            check=check,
             env=env,
             capture_output=get_stdout,
             stdout=None if get_stdout else sys.stdout
