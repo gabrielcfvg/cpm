@@ -33,15 +33,20 @@ if [[ -f $CPM_BIN ]]; then
 fi
 
 
+# update the dependencies and the project metadata
+$SCRIPT_HOME/poetry.sh install
+
+
 # create the build folder if needed
 if ! [[ -d $PYINSTALLER_HOME ]]; then
     mkdir $PYINSTALLER_HOME
 fi
-
-
-
 cd $PYINSTALLER_HOME
-$POETRY_BIN -C $SCRIPT_HOME run pyinstaller -n cpm -y --workpath $PYINSTALLER_WORKPATH --distpath $PYINSTALLER_DIST $SCRIPT_HOME/cpm/__main__.py
+
+# dump the current version for bundling, that way we make pyinstaller rebuild if version changes
+$SCRIPT_HOME/poetry.sh version | tr -d '\n' > ./cpm_version
+
+$POETRY_BIN -C $SCRIPT_HOME run pyinstaller -n cpm -y --add-data=./cpm_version:. --workpath $PYINSTALLER_WORKPATH --distpath $PYINSTALLER_DIST $SCRIPT_HOME/cpm/__main__.py
 cd $SCRIPT_HOME/example_project
 $CPM_BIN --version | tr -d '\n' > $CPM_VERSION_PATH
 cd $SCRIPT_HOME
