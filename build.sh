@@ -41,7 +41,7 @@ fi
 
 
 cd $PYINSTALLER_HOME
-$POETRY_BIN run pyinstaller -n cpm -y --workpath $PYINSTALLER_WORKPATH --distpath $PYINSTALLER_DIST $SCRIPT_HOME/cpm/__main__.py
+$POETRY_BIN -C $SCRIPT_HOME run pyinstaller -n cpm -y --workpath $PYINSTALLER_WORKPATH --distpath $PYINSTALLER_DIST $SCRIPT_HOME/cpm/__main__.py
 cd $SCRIPT_HOME/example_project
 $CPM_BIN --version | tr -d '\n' > $CPM_VERSION_PATH
 cd $SCRIPT_HOME

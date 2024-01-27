@@ -98,9 +98,9 @@ function install_poetry {
     fi
 
     curl -sSL https://install.python-poetry.org | POETRY_HOME=$POETRY_HOME POETRY_VERSION=$POETRY_VERSION $PYTHON_BIN - > /dev/null
-    $POETRY_BIN config virtualenvs.in-project true
-    $POETRY_BIN env use $PYTHON_BIN
-    $POETRY_BIN install
+    $POETRY_BIN -C $SCRIPT_HOME config virtualenvs.in-project true
+    $POETRY_BIN -C $SCRIPT_HOME env use $PYTHON_BIN
+    $POETRY_BIN -C $SCRIPT_HOME install
     echo -n $POETRY_VERSION > $POETRY_VERSION_PATH
 }
 

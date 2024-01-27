@@ -12,4 +12,4 @@ source $SCRIPT_HOME/vars.sh
 $SCRIPT_HOME/setup_env.sh > /dev/null
 
 
-$POETRY_BIN "$@"
+$POETRY_BIN -C $SCRIPT_HOME "$@"
