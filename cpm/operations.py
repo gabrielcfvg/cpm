@@ -56,7 +56,7 @@ def build(config: ProjectConfig, target: str, build_type: str):
     
     commands_path = Path(build_folder, "compile_commands.json")
     if commands_path.exists():
-        shutil.copyfile(commands_path, "compile_commands.json")
+        shutil.copyfile(commands_path, Path(config.build_folder, "compile_commands.json"))
 
 def run(config: ProjectConfig, target: str, build_type: str, args: List[str]):
 
