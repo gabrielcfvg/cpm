@@ -10,7 +10,7 @@ source $SCRIPT_HOME/vars.sh
 
 
 # call setup_env.sh to ensure that all dependencies are meet
-$SCRIPT_HOME/setup_env.sh
+$SCRIPT_HOME/setup_env.sh >&2
 
 # check if the current build is already the lastest version
 if [[ -f $CPM_BIN ]]; then
