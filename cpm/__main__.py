@@ -28,7 +28,9 @@ def build(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[Lis
     if fw_args != None:
         panic("build command do not receives forward arguments")
 
-    operations.build(config, args.target, args.build_type)
+    target: str
+    for target in args.target:
+        operations.build(config, target, args.build_type)
 
 def run(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[List[str]]):
     
