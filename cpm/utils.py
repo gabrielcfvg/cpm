@@ -26,33 +26,22 @@ def cmd(command: str, get_stdout: bool = False, check: bool = True, shell: bool 
 
         return CMDResult(r.returncode, r.stdout if get_stdout == True else None)
 
-        #if get_stdout:
-        #    return subprocess.run(command.split(' '), shell=shell, check=True, env=env, capture_output=True).stdout
-        #else:
-        #    subprocess.run(command.split(' '), shell=shell, check=True, env=env, stdout=sys.stdout)
-    
     except KeyboardInterrupt:
         return CMDResult(1, None)
+    
+    except subprocess.CalledProcessError as e:
+        return CMDResult(e.returncode, e.output)
 
 def command_exists(command_name: str) -> bool:
 
-    try:
-        cmd(f"command -v {command_name}", get_stdout=True, shell=True)
-        return True
-    except subprocess.CalledProcessError:
-        return False
+    return cmd(f"command -v {command_name}", get_stdout=True, shell=True).exit_code == 0
 
 def is_file_executable(file: Path) -> bool:
 
     assert file.exists()
     assert file.is_file()
 
-    try:
-        cmd(f"test -x {file}", get_stdout=True, shell=True) # FIXME: falha mesmo que o arquivo seja executável
-        return True
-    except subprocess.CalledProcessError:
-        return False
-        
+    return cmd(f"test -x {file}", get_stdout=True, shell=True).exit_code == 0
 
 def panic(*args: str, code: int = 1) -> NoReturn:
 
