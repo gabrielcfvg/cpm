@@ -8,7 +8,7 @@ from pathlib import Path
 import tomllib
 
 # local
-from utils import panic, is_file_executable, command_exists
+from utils import panic, command_exists
 from type_check import check_type
 
 
@@ -188,8 +188,9 @@ def __validate_config(config: ProjectConfig):
             panic(f"target path must be relative, {target.path} is not")
         
     if config.cmake_custom_path != None:
-        if not is_file_executable(config.cmake_custom_path):
-            panic("project.cmake_custom_path must be a executable file")
+        panic("custom cmake path is not implemented yet")
+        # if not is_file_executable(config.cmake_custom_path):
+        #     panic("project.cmake_custom_path must be a executable file")
     else:
         if not command_exists("cmake"):
             panic("cmake command not found")

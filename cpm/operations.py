@@ -8,7 +8,7 @@ from typing import List, Callable
 
 # local
 from config_file import ProjectConfig
-from utils import any_newer_than, cmd, panic, is_file_executable, command_exists
+from utils import any_newer_than, cmd, panic, command_exists
 
 
 
@@ -77,7 +77,7 @@ def run(config: ProjectConfig, target: str, build_type: str, args: List[str]):
     fargs = " ".join(args)
     build(config, target, build_type)
     executable_path = config.get_executable_path(target, build_type)
-    assert is_file_executable(executable_path)
+    # assert is_file_executable(executable_path)
     
     print(f"running '{target}'") # TODO: colorir
 

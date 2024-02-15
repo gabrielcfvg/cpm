@@ -38,6 +38,8 @@ def command_exists(command_name: str) -> bool:
 
 def is_file_executable(file: Path) -> bool:
 
+    # FIXME: não funciona
+
     assert file.exists()
     assert file.is_file()
 
