@@ -20,11 +20,15 @@ import importlib.metadata
 from config_file import read_config, ProjectConfig
 from utils import panic
 import operations
+from type_check import check_type
 
 
 
 def build(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[List[str]]):
     
+    assert check_type(args.target, List[str])
+    assert check_type(args.build_type, str)
+
     if fw_args != None:
         panic("build command do not receives forward arguments")
 
@@ -34,13 +38,19 @@ def build(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[Lis
 
 def run(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[List[str]]):
     
+    assert check_type(args.target, str)
+    assert check_type(args.build_type, str)
+
     operations.run(config, args.target, args.build_type, fw_args if fw_args != None else [])
 
 def test(config: ProjectConfig, args: argparse.Namespace, fw_args: Optional[List[str]]):
 
-    if fw_args != None and len(args.target) > 1:
-        panic("test command only support forward arguments when testing a single target")
-
+    assert check_type(args.target, List[str])
+    assert check_type(args.build_type, str)
+    
+    if fw_args != None:
+        panic("test command do not receives forward arguments")
+    
     target: str
     for target in args.target:
         operations.run(config, target, args.build_type, [])
@@ -84,7 +94,7 @@ def build_parser(config: ProjectConfig) -> argparse.ArgumentParser:
     build_command.add_argument(
         "-t", "--target",
         dest="target",
-        default=config.main_target,
+        default=[config.main_target],
         nargs="+",
         choices=config.targets.keys(),
         help=f"the targets to be built, default: {config.main_target}"

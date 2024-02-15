@@ -21,51 +21,39 @@ def check_type[T](value: Any, tp: type[T]) -> TypeGuard[T]:
 
 def check_generic_type(value: Any, tp: type) -> bool:
 
-    def check_multiple(value: Any, *tps: type) -> bool:
+    def check_multiple(value: Any, tp: type) -> bool:
 
         assert isinstance(value, (Union, UnionType, Optional))
 
-        return any(check_type(value, tp) for tp in tps)
+        return any(check_type(value, tp) for tp in get_args(tp))
 
     def check_dict(value: Any, tp: type) -> bool:
 
         assert isinstance(value, (Dict, dict))
 
         (key_tp, item_tp) = get_args(tp)
-        value: Dict[Any, Any] = cast(Dict[Any, Any], value)
-
-        def __old_fn(key_tp: type, item_tp: type):
-            for key, item in value.items():
-                if not (check_type(key, key_tp) and check_type(item, item_tp)):
-                    return False
-            return True
+        _value: Dict[Any, Any] = cast(Dict[Any, Any], value)
 
         r = all([(check_type(key, key_tp) and check_type(item, item_tp))
-                 for key, item in value.items()])
+                 for key, item in _value.items()])
         
-        # roda isso ao menos uma vez so pra verificar
-        assert r == __old_fn(key_tp, item_tp), 'runtime test failed sorry'
         return r
 
 
-    def check_list(value: List[Any], tp: type) -> bool:
+    def check_list(value: Any, tp: type) -> bool:
         
         assert isinstance(value, (List, list))
 
         item_tp = get_args(tp)[0]
 
-        def __old_fn(item_tp: type):
-            for item in value:
-                if not check_type(item, item_tp):
-                    return False
-            return True
-        
-        r = all([check_type(item, item_tp) for item in value])
-        assert r == __old_fn(item_tp), 'runtime test failed sorry'
-        return r
+        item: Any
+        for item in value:
+            if not check_type(item, item_tp):
+                return False
+        return True
 
 
-    check_map: Dict[type, Callable[[Any, type], bool]] = {
+    check_map: Dict[type, Callable[[Any, type], bool]] = { # type: ignore
         Dict: check_dict,
         dict: check_dict,
         List: check_list,
