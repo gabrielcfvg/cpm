@@ -50,7 +50,6 @@ done
 
 if ! [[ SYS_PYTHON_ERROR -eq 0 ]]; then
     echo "could not find a compatible python interpreter" >&2
-    echo "You can use the build_env and dev_env container images to develop or build CPM." >&2
     exit 1
 fi
 
@@ -60,7 +59,6 @@ fi
 # check if poetry is available
 if ! command -v poetry &> /dev/null; then
     echo "Poetry is not installed. Please install Poetry." >&2
-    echo "You can use the build_env and dev_env container images to develop or build CPM." >&2
     exit 1
 fi
 
@@ -68,6 +66,5 @@ fi
 INSTALLED_POETRY_VERSION=$(poetry --version | awk '{print $NF}')
 if ! [[ "$(printf '%s\n' "$POETRY_VERSION" "$INSTALLED_POETRY_VERSION" | sort -V | head -n1)" == "$POETRY_VERSION" ]]; then
     echo "Poetry version $POETRY_VERSION or higher is required. Please upgrade Poetry." >&2
-    echo "You can use the build_env and dev_env container images to develop or build CPM." >&2
     exit 1
 fi

@@ -10,7 +10,11 @@ source $SCRIPT_HOME/vars.sh
 
 
 # call setup_env.sh to ensure that all dependencies are meet
-$SCRIPT_HOME/setup_env.sh >&2
+if ! $SCRIPT_HOME/setup_env.sh; then
+    echo "Looks like the environment does not meet the requirements."
+    echo "You can use docker_build.sh to build the project in a container with all the requires dependencies."
+    exit 1 
+fi
 
 # check if the current build is already the lastest version
 if [[ -f $CPM_BIN ]]; then
