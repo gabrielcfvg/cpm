@@ -11,4 +11,4 @@ source $SCRIPT_HOME/vars.sh
 # call setup_env.sh to ensure that all dependencies are meet
 $SCRIPT_HOME/setup_env.sh > /dev/null
 
-$POETRY_BIN -C $SCRIPT_HOME "$@"
+poetry -C $SCRIPT_HOME "$@"

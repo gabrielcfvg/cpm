@@ -1,15 +1,5 @@
 #!/usr/bin/env bash
 
-
-# if DRY_RUN is not defined, set it to zero
-# this needs to happen before 'set', since it is an external variable
-
-if ! [[ -v DRY_RUN ]]; then
-    DRY_RUN=0
-else
-    DRY_RUN=$DRY_RUN
-fi
-
 # setup errors
 set -eu
 
@@ -18,43 +8,7 @@ SCRIPT_HOME=$(dirname -- "$( readlink -f -- "$0"; )";)
 source $SCRIPT_HOME/vars.sh
 
 
-
-function install_poetry {
-
-    if [[ $DRY_RUN -eq 1 ]]; then
-        echo "internal error: $FUNCNAME should not be called in DRY_RUN mode" >&2
-        exit 0
-    fi
-
-    if [[ -d $POETRY_HOME ]]; then
-        echo "cleaning previous poetry installation" >&2
-        rm -rf $POETRY_HOME
-    fi
-
-    curl -sSL https://install.python-poetry.org | POETRY_HOME=$POETRY_HOME POETRY_VERSION=$POETRY_VERSION $PYTHON_BIN - > /dev/null
-    $POETRY_BIN -C $SCRIPT_HOME config virtualenvs.in-project true
-    $POETRY_BIN -C $SCRIPT_HOME env use $PYTHON_BIN
-    $POETRY_BIN -C $SCRIPT_HOME install
-    echo -n $POETRY_VERSION > $POETRY_VERSION_PATH
-}
-
-# unused, for now.....
-#
-# function read_answer {
-# 
-#     read -p "$1 ($2, $3): " answer
-# 
-#     if [[ "$answer" == "$2" ]]; then
-#         return 1
-#     elif [[ "$answer" == "$3" ]]; then
-#         return 2
-#     else
-#         echo "invalid answer, retry"
-#         return $(read_answer "$1" "$2" "$3")
-#     fi
-# }
-
-
+# ---------------------------------- python ---------------------------------- #
 
 SYS_PYTHON_ERROR=0
 SYS_PYTHON_ERROR_MESSAGE=0
@@ -94,34 +48,26 @@ for python in "${PYTHON_NAMES[@]}"; do
     fi
 done
 
-
 if ! [[ SYS_PYTHON_ERROR -eq 0 ]]; then
     echo "could not find a compatible python interpreter" >&2
+    echo "You can use the build_env and dev_env container images to develop or build CPM." >&2
     exit 1
 fi
 
 
+# ---------------------------------- poetry ---------------------------------- #
 
-# checar se o poetry já está instalado
-# - se não, instalar
-if ! [[ -d $POETRY_HOME ]]; then
-
-    echo "local poetry not found, installing poetry..." >&2
-
-    if ! [[ $DRY_RUN -eq 1 ]]; then
-        install_poetry
-    fi
+# check if poetry is available
+if ! command -v poetry &> /dev/null; then
+    echo "Poetry is not installed. Please install Poetry." >&2
+    echo "You can use the build_env and dev_env container images to develop or build CPM." >&2
+    exit 1
 fi
 
-# checar se a versão do poetry instalado é menor que a da variável
-# - se sim, reinstalar o poetry
-if ! $SCRIPT_HOME/scripts/version_gte.py $POETRY_VERSION $(cat $POETRY_VERSION_PATH); then
-    
-    echo "obsolete or inadequate local poetry version, reinstalling..." >&2
-    
-    if ! [[ $DRY_RUN -eq 1 ]]; then
-        install_poetry
-    fi
+# check if poetry version is equal or higher than the required version
+INSTALLED_POETRY_VERSION=$(poetry --version | awk '{print $NF}')
+if ! [[ "$(printf '%s\n' "$POETRY_VERSION" "$INSTALLED_POETRY_VERSION" | sort -V | head -n1)" == "$POETRY_VERSION" ]]; then
+    echo "Poetry version $POETRY_VERSION or higher is required. Please upgrade Poetry." >&2
+    echo "You can use the build_env and dev_env container images to develop or build CPM." >&2
+    exit 1
 fi
-
-echo "poetry local installation is done"

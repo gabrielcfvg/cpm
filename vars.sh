@@ -7,20 +7,16 @@ set -eu
 # setting the path variables
 SCRIPT_HOME="$(dirname -- "$( readlink -f -- "$0"; )";)"
 
-POETRY_HOME="$SCRIPT_HOME/poetry"
-POETRY_BIN="$POETRY_HOME/bin/poetry"
+# dependencies versions
 POETRY_VERSION="1.7.1"
-POETRY_VERSION_PATH="$POETRY_HOME/.poetry_version"
-
-PYTHON_CMD="python3"
 PYTHON_VERSION="3.12.1"
 PYTHON_REDUCED_VERSION=$(echo "$PYTHON_VERSION" | cut -d'.' -f1,2)
 PYTHON_NAMES=("python3" "python$PYTHON_REDUCED_VERSION")
 
+# build paths
 PYINSTALLER_HOME="$SCRIPT_HOME/build" # prevents the root folder from getting too dirty
 PYINSTALLER_WORKPATH="cache" # two consecutive build folders are confusing
 PYINSTALLER_DIST="dist"
-
 CPM_HOME="$PYINSTALLER_HOME/$PYINSTALLER_DIST/cpm"
 CPM_BIN="$CPM_HOME/cpm"
 CPM_VERSION="0.1.10"
