@@ -19,7 +19,7 @@ PYINSTALLER_WORKPATH="cache" # two consecutive build folders are confusing
 PYINSTALLER_DIST="dist"
 CPM_HOME="$PYINSTALLER_HOME/$PYINSTALLER_DIST/cpm"
 CPM_BIN="$CPM_HOME/cpm"
-CPM_VERSION="0.1.10"
+CPM_VERSION="0.1.12"
 CPM_VERSION_PATH="$CPM_HOME/.cpm_path"
 
 
